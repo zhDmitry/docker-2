@@ -20,7 +20,7 @@ var err error
 var port = flag.String("port", ":1234", "port for app")
 
 const uploadPath = "./upload/"
-const taskFileName = "./task.md"
+const taskFileName = "task.md"
 
 func connectToDb() *gorm.DB {
 	db, err = gorm.Open("sqlite3", "database.db")
@@ -76,7 +76,10 @@ func finishTask(c *gin.Context) {
 	link := getDb().First(&task, inviteID)
 	err := link.Error
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you haven't started task yet, contact admin to get invite"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "you haven't task yet, contact admin to get invite"})
+	}
+	if task.CreatedAt.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "you haven't started task yet, go to /invite/:yourId to start task "})
 	}
 	timeFinished := time.Now()
 	err = link.Updates(&Task{FinishedAt: timeFinished}).Error
@@ -119,8 +122,8 @@ func startTask(c *gin.Context) {
 	}
 	if updateError == nil {
 		log.Print(err)
-		c.Header("Content-Disposition", "attachment; filename=AlmostC.md")
-		c.File(taskFileName)
+		c.Header("Content-Disposition", "attachment; filename="+taskFileName)
+		c.File("./" + taskFileName)
 
 		return
 	}
@@ -139,6 +142,10 @@ func taskView(c *gin.Context) {
 	return
 }
 
+func adminApp(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_app.html", gin.H{})
+	return
+}
 func finishView(c *gin.Context) {
 	var task Task
 	err := getDb().First(&task, c.Param("inviteID")).Error
@@ -156,6 +163,8 @@ func main() {
 	//gin.SetMode(gin.ReleaseMode)
 
 	r := gin.Default()
+	r.Delims("{{{", "}}}")
+
 	r.LoadHTMLGlob("templates/*")
 
 	db := connectToDb()
@@ -167,9 +176,10 @@ func main() {
 		"dima":   "Qwe4ty",
 	}))
 
-	authorized.StaticFS("/submits", http.Dir("./upload"))
-	authorized.GET("/newinvite", generateNewInvite)
-	authorized.GET("/tasks", listTasks)
+	authorized.StaticFS("api/submits", http.Dir("./upload"))
+	authorized.GET("api/newinvite", generateNewInvite)
+	authorized.GET("api/tasks", listTasks)
+	authorized.Any("/", adminApp)
 
 	r.GET("/invite/:inviteID", taskView)
 	r.GET("/start/:inviteID", startTask)

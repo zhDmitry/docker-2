@@ -8,7 +8,7 @@ import (
 
 type Task struct {
 	ID   string `gorm:"primary_key" json:"id"`
-	Info string `gorm:"size:2048" json:"description"`
+	Info string `gorm:"size:2048" json:"info"`
 
 	CreatedAt  time.Time
 	StartedAt  time.Time

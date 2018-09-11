@@ -1,0 +1,200 @@
+{{{ define "admin_app.html" }}}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+  <div id="app">
+   <v-app>
+      <v-content>
+        <v-container>
+            <tasks-list>
+            </tasks-list>
+        </v-container>
+      </v-content>
+    </v-app>
+  </div>
+ <script type="text/x-template" id="task-list">
+ <div>
+  <div style="display:flex">
+    <v-textarea
+        v-model="info"
+        auto-grow
+        box
+        label="Task info"
+        rows="1"
+    ></v-textarea>
+      <v-btn
+      color="info"
+      @click="createTask"
+      :loading="loadingState===1"
+    >
+      Create task
+    </v-btn>
+  </div>
+<v-card>
+    <v-card-title>
+      Tasks
+      <v-spacer></v-spacer>
+      <v-text-field
+        v-model="search"
+        append-icon="search"
+        label="Search"
+        single-line
+        hide-details
+      ></v-text-field>
+    </v-card-title>
+    <v-data-table
+      :headers="headers"
+      :items="tasksList"
+      :search="search"
+      :pagination.sync="pagination"
+      :loading="loadingState === 1"
+    >
+    <v-progress-linear slot="progress" color="blue" indeterminate></v-progress-linear>
+      <template slot="items" slot-scope="props">
+        <td>{{ props.item.id }}</td>
+        <td class="text-xs-right">{{ props.item.info }}</td>
+        <td class="text-xs-right">{{ props.item.StartedAt | formatDate }}</td>
+        <td class="text-xs-right">{{ props.item.FinishedAt | formatDate }}</td>
+        <td class="text-xs-right">{{ props.item.CreatedAt | formatDate }}</td>
+        <td class="text-xs-right">
+            <submits-dialog :url="'/admin/api/submits/'+props.item.id"></submits-dialog>
+        </td>
+
+      </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
+    </v-data-table>
+  </v-card>
+  </div>
+</script>
+<script  type="text/x-template" id="submits-dialog">
+  <div class="text-xs-center">
+    <v-dialog
+      v-model="dialog"
+      width="1000"
+    >
+      <v-btn
+        slot="activator"
+      >
+       Show
+      </v-btn>
+
+      <v-card>
+        <v-card-title
+          class="headline grey lighten-2"
+          primary-title
+        >
+          Submits
+        </v-card-title>
+
+        <iframe style="border:none" width="100%" :src="url">
+        </iframe>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            flat
+            @click="dialog = false"
+          >
+           Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.js"></script>
+  <script src="https://unpkg.com/moment"></script>
+
+  <script>
+  const initialDate = "0001-01-01T00:00:00Z";
+  function listTasks() {
+      return fetch('/admin/api/tasks').then(el=>el.json())
+  }
+  Vue.filter('formatDate', function(value) {
+      if(value === initialDate) {
+          return "Not Tracked"
+      }
+    if (value) {
+        return moment(String(value)).format('MM/DD/YYYY hh:mm')
+    }
+    })
+    const LStates = {
+        loading: 1,
+        done: 0,
+        error: 2
+    }
+
+    Vue.component('submits-dialog', {
+        template:'#submits-dialog',
+        props: ['url'],
+        data () {
+            return {
+                dialog: false
+            }
+        }
+    })
+    Vue.component('tasks-list', {
+        template: '#task-list',
+        data(){
+            return {
+                pagination: {
+                    'sortBy': 'CreatedAt',
+                    'descending': true,
+                },
+               search: '',
+               headers: [
+                    {
+                        text: 'Id',
+                        align: 'left',
+                        sortable: false,
+                        value: 'id'
+                    },
+                    { text: 'Info', value: 'info', width: '30%', align: 'right' },
+                    { text: 'StartedAt', value: 'StartedAt' },
+                    { text: 'FinishedAt', value: 'FinishedAt' },
+                    { text: 'CreatedAt', value: 'CreatedAt' },
+                    { text: 'Submits Page', value: 'id' },
+                ],
+                tasksList: [],
+                loadingState: LStates.done,
+                info:''
+            }
+        },
+        mounted() {
+            this.loadTasks()
+        },
+        methods: {
+            async createTask(data) {
+                fetch("/admin/api/newinvite?info="+this.info).then(el=>el.json()).then(id=>{
+                    this.loadTasks()
+                })
+            },
+            loadTasks: async function () {
+                this.loadingState = LStates.loading;
+                try {
+                    const res = await listTasks()
+                    this.tasksList = res
+                    this.loadingState = LStates.done;
+                } catch (e) {
+                    this.loadingState = LStates.error;
+                }
+            }
+        }
+    })  
+    new Vue({ el: '#app' })
+  </script>
+</body>
+</html>
+{{{ end }}}
