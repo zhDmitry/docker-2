@@ -1,0 +1,11 @@
+{{ define "finish_task_view.tmpl" }}
+<html>
+<form action="/task-finish/{{.ID}}" method="POST" enctype="multipart/form-data">
+<label> submit your file </label>
+<input name="file" type="file"  >
+<button type="submit">
+Submit
+</button>
+</form>
+</html>
+{{ end }}
