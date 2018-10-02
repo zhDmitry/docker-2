@@ -172,10 +172,7 @@ func main() {
 	db := connectToDb()
 	defer db.Close()
 	authorized := r.Group("/admin", gin.BasicAuth(gin.Accounts{
-		"vova":   "1werty",
-		"cristy": "Q2erty",
-		"radu":   "Qw3rty",
-		"dima":   "Qwe4ty",
+		"admin": "admin",
 	}))
 
 	authorized.StaticFS("api/submits", http.Dir("./upload"))
