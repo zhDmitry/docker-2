@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 
 	"github.com/jinzhu/gorm"
 )
@@ -18,12 +18,13 @@ import (
 var db *gorm.DB
 var err error
 var port = flag.String("port", ":1234", "port for app")
+var connection = flag.String("c", "--", "db connection string for app")
 
 const uploadPath = "./upload/"
 const taskFileName = "task.md"
 
 func connectToDb() *gorm.DB {
-	db, err = gorm.Open("sqlite3", "database.db")
+	db, err = gorm.Open("mysql", *connection)
 	if err != nil {
 		log.Fatal(err)
 		panic("failed to connect database")
@@ -158,8 +159,9 @@ func finishView(c *gin.Context) {
 }
 
 func main() {
+	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
-
+	fmt.Println(*connection)
 	//gin.SetMode(gin.ReleaseMode)
 
 	r := gin.Default()

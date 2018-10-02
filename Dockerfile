@@ -1,6 +1,7 @@
 FROM golang
-WORKDIR /go/src/test
+WORKDIR /go/src/app
 COPY . .
 RUN go get -v .
 EXPOSE 1234
-CMD go run .
+RUN go build .
+CMD ./app -c $CONNECTION_STR
